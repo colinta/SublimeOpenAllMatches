@@ -1,0 +1,4 @@
+[
+    { "keys": ["super+ctrl+shift+f"], "command": "open_all_matches" },
+    { "keys": ["ctrl+alt+shift+f"], "command": "open_all_matches", "args": { "regex" : true } }
+]

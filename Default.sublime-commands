@@ -1,0 +1,11 @@
+[
+    {
+        "caption": "Open all matches",
+        "command": "open_all_matches"
+    },
+    {
+        "caption": "Open all matches using regex",
+        "command": "open_all_matches",
+        "args": { "regex": true }
+    }
+]
