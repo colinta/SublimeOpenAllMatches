@@ -2,7 +2,6 @@ import sublime
 import sublime_plugin
 import os
 import re
-import codecs
 from fnmatch import fnmatch
 
 
@@ -13,23 +12,43 @@ class OpenAllMatchesCommand(sublime_plugin.TextCommand):
 
         # any edits that are performed will happen in reverse; this makes it
         # easy to keep region.a and region.b pointing to the correct locations
-        def compare(region_a, region_b):
-            return cmp(region_b.end(), region_a.end())
-        regions.sort(compare)
+        def get_end(region):
+            return region.end()
+        regions.sort(key=get_end, reverse=True)
 
         for region in regions:
-            error = self.run_each(edit, region, **kwargs)
+            try:
+                error = self.run_each(edit, region, **kwargs)
+            except Exception as exception:
+                print repr(exception)
+                error = exception.message
+
             if error:
                 sublime.status_message(error)
         self.view.end_edit(e)
 
     def run_each(self, edit, region, regex=False):
         def on_done(search):
+            search = search.encode('utf-8')
             folders = self.view.window().folders()
             files = self.find_files(folders, search, regex)
-
+            window = self.view.window()
             for file in files:
-                self.view.window().open_file(file)
+                new_file = window.open_file(file)
+
+                def callback():
+                    flags = 0
+                    if not regex:
+                        flags |= sublime.LITERAL
+                    selections = new_file.find_all(search, flags)
+                    if selections:
+                        new_file.sel().clear()
+                        for selection in selections:
+                            new_file.sel().add(selection)
+                        new_file.show(selection)
+
+                sublime.set_timeout(callback, 250)
+
         if regex:
             prompt = 'Regex search'
         else:
@@ -45,6 +64,9 @@ class OpenAllMatchesCommand(sublime_plugin.TextCommand):
 
         ret = []
         for folder in folders:
+            if not os.path.isdir(folder):
+                continue
+
             for file in os.listdir(folder):
                 fullpath = os.path.join(folder, file)
                 if os.path.isdir(fullpath):
@@ -55,11 +77,14 @@ class OpenAllMatchesCommand(sublime_plugin.TextCommand):
                     # excluded file?
                     if not len([True for pattern in file_exclude_patterns if fnmatch(file, pattern)]):
                         # do my search
-                        with codecs.open(fullpath, mode='U', encoding='utf-8') as f:
-                            from_content = f.read()
+                        try:
+                            with open(fullpath, mode='U') as f:
+                                from_content = f.read()
 
-                        if not regex and search in from_content:
-                            ret.append(fullpath)
-                        elif regex and re.search(search, from_content):
-                            ret.append(fullpath)
+                            if not regex and search in from_content:
+                                ret.append(fullpath)
+                            elif regex and re.search(search, from_content):
+                                ret.append(fullpath)
+                        except UnicodeDecodeError:
+                            sublime.status_message('Could not open "' + fullpath + '"')
         return ret
