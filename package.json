@@ -1,0 +1,15 @@
+{
+  "name": "OpenAllMatches",
+  "description": "Open all files that match a search pattern.",
+  "author": "Colin T.A. Gray (colinta)",
+  "details": "https://github.com/colinta/SublimeOpenAllMatches",
+  "labels": [
+    "text manipulation"
+  ],
+  "releases": [
+    {
+      "details": "https://github.com/colinta/SublimeOpenAllMatches/tags",
+      "sublime_text": ">=3000"
+    }
+  ]
+}
