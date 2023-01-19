@@ -6,54 +6,34 @@ from fnmatch import fnmatch
 
 
 class OpenAllMatchesCommand(sublime_plugin.TextCommand):
-    def run(self, edit, **kwargs):
-        e = self.view.begin_edit('open_all_matches')
-        regions = [region for region in self.view.sel()]
-
-        # any edits that are performed will happen in reverse; this makes it
-        # easy to keep region.a and region.b pointing to the correct locations
-        def get_end(region):
-            return region.end()
-        regions.sort(key=get_end, reverse=True)
-
-        for region in regions:
-            try:
-                error = self.run_each(edit, region, **kwargs)
-            except Exception as exception:
-                print repr(exception)
-                error = exception.message
-
-            if error:
-                sublime.status_message(error)
-        self.view.end_edit(e)
-
-    def run_each(self, edit, region, regex=False):
-        def on_done(search):
-            search = search.encode('utf-8')
-            folders = self.view.window().folders()
-            files = self.find_files(folders, search, regex)
-            window = self.view.window()
-            for file in files:
-                new_file = window.open_file(file)
-
-                def callback():
-                    flags = 0
-                    if not regex:
-                        flags |= sublime.LITERAL
-                    selections = new_file.find_all(search, flags)
-                    if selections:
-                        new_file.sel().clear()
-                        for selection in selections:
-                            new_file.sel().add(selection)
-                        new_file.show(selection)
-
-                sublime.set_timeout(callback, 250)
+    def run(self, edit, regex=False):
+        callback = lambda search: self.on_done(search, regex)
 
         if regex:
             prompt = 'Regex search'
         else:
             prompt = 'Search'
-        self.view.window().show_input_panel(prompt, '', on_done, None, None)
+        self.view.window().show_input_panel(prompt, '', callback, None, None)
+
+    def on_done(self, search, regex):
+        folders = self.view.window().folders()
+        files = self.find_files(folders, search, regex)
+        window = self.view.window()
+        for file in files:
+            new_file = window.open_file(file)
+
+            def callback():
+                flags = 0
+                if not regex:
+                    flags |= sublime.LITERAL
+                selections = new_file.find_all(search, flags)
+                if selections:
+                    new_file.sel().clear()
+                    for selection in selections:
+                        new_file.sel().add(selection)
+                    new_file.show(selection)
+
+            sublime.set_timeout(callback, 250)
 
     def find_files(self, folders, search, regex):
         # Cannot access these settings!!  WHY!?
@@ -85,6 +65,8 @@ class OpenAllMatchesCommand(sublime_plugin.TextCommand):
                                 ret.append(fullpath)
                             elif regex and re.search(search, from_content):
                                 ret.append(fullpath)
+                        except FileNotFoundError:
+                            pass
                         except UnicodeDecodeError:
                             sublime.status_message('Could not open "' + fullpath + '"')
         return ret
