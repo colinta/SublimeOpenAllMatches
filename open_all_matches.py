@@ -36,26 +36,41 @@ class OpenAllMatchesCommand(sublime_plugin.TextCommand):
             sublime.set_timeout(callback, 250)
 
     def find_files(self, folders, search, regex):
-        # Cannot access these settings!!  WHY!?
-        # folder_exclude_patterns = self.view.settings().get('folder_exclude_patterns')
-        # file_exclude_patterns = self.view.settings().get('file_exclude_patterns')
-        folder_exclude_patterns = [".svn", ".git", ".hg", "CVS"]
-        file_exclude_patterns = ["*.pyc", "*.pyo", "*.exe", "*.dll", "*.obj", "*.o", "*.a", "*.lib", "*.so", "*.dylib", "*.ncb", "*.sdf", "*.suo", "*.pdb", "*.idb", ".DS_Store", "*.class", "*.psd", "*.db"]
-
         ret = []
         for folder in folders:
+            folder_exclude_patterns = self.view.settings().get('folder_exclude_patterns')
+            file_exclude_patterns = self.view.settings().get('file_exclude_patterns')
+
             if not os.path.isdir(folder):
                 continue
+
+            project_data = self.view.window().project_data()
+            if project_data and project_data['folders']:
+                folder_data = ([data for data in project_data['folders'] if data['path'] == folder] or [{}])[0]
+                if 'file_exclude_patterns' in folder_data:
+                    file_exclude_patterns += folder_data['file_exclude_patterns']
+                if 'folder_exclude_patterns' in folder_data:
+                    folder_exclude_patterns += folder_data['folder_exclude_patterns']
 
             for file in os.listdir(folder):
                 fullpath = os.path.join(folder, file)
                 if os.path.isdir(fullpath):
                     # excluded folder?
-                    if not len([True for pattern in folder_exclude_patterns if fnmatch(file, pattern)]):
+                    exclude = False
+                    for pattern in folder_exclude_patterns:
+                        if fnmatch(file, pattern):
+                            exclude = True
+                            break
+                    if not exclude:
                         ret += self.find_files([fullpath], search, regex)
                 else:
                     # excluded file?
-                    if not len([True for pattern in file_exclude_patterns if fnmatch(file, pattern)]):
+                    exclude = False
+                    for pattern in file_exclude_patterns:
+                        if fnmatch(file, pattern):
+                            exclude = True
+                            break
+                    if not exclude:
                         # do my search
                         try:
                             with open(fullpath, mode='U') as f:
