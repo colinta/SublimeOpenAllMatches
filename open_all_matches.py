@@ -83,5 +83,5 @@ class OpenAllMatchesCommand(sublime_plugin.TextCommand):
                         except FileNotFoundError:
                             pass
                         except UnicodeDecodeError:
-                            sublime.status_message('Could not open "' + fullpath + '"')
+                            self.view.show_popup('Could not open "' + fullpath + '"')
         return ret
