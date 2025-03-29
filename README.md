@@ -4,18 +4,10 @@ OpenAllMatches
 Installation
 ------------
 
-1. Using Package Control, install "OpenAllMatches"
+Using Package Control, install "OpenAllMatches" or clone this repo in your packages folder.
 
-Or:
-
-1. Open the Sublime Text 3 Packages folder
-
-    - OS X: ~/Library/Application Support/Sublime Text 3/Packages/
-    - Windows: %APPDATA%/Sublime Text 3/Packages/
-    - Linux: ~/.Sublime Text 3/Packages/
-
-2. clone this repo
-3. Install keymaps for the commands (see Example.sublime-keymap for my preferred keys)
+I recommended you add key bindings for the commands. I've included my preferred bindings below.
+Copy them to your key bindings file (⌘⇧,).
 
 Commands
 --------
@@ -23,3 +15,13 @@ Commands
 `open_all_matches`: Prompts for a search, and opens all files in the project that contain the search pattern.
 
 Options: `regex`: Perform a regular expression search (default `False`)
+
+Key Bindings
+------------
+
+Copy these to your user key bindings file.
+
+<!-- keybindings start -->
+    { "keys": ["super+ctrl+shift+f"], "command": "open_all_matches" },
+    { "keys": ["ctrl+alt+shift+f"], "command": "open_all_matches", "args": { "regex" : true } },
+<!-- keybindings stop -->
